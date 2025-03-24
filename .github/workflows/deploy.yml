@@ -1,0 +1,35 @@
+name: Deploy to Itch.io
+
+on:
+  push:
+    branches:
+      - main  # Executa quando há mudanças na branch principal
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
+
+      - name: Gerar número da versão
+        run: echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Criar pasta de build
+        run: |
+          mkdir build
+          cp -r game/www/* build/
+
+      - name: Instalar butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/latest/archive/default
+          unzip butler.zip -d butler
+          chmod +x butler/butler
+          sudo mv butler/butler /usr/local/bin/
+
+      - name: Enviar para Itch.io com versão automática
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          butler push build your-itch-username/your-game:html5 --userversion $VERSION
